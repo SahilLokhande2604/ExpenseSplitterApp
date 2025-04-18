@@ -9,10 +9,8 @@ class User {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null || getClass() != obj.getClass())
-            return false;
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
         User user = (User) obj;
         return Objects.equals(name, user.name);
     }
@@ -52,7 +50,7 @@ class Group {
 
             if (user.equals(paidBy)) {
                 debtMap.put(user, new HashMap<>());
-                continue; // skip payer
+                continue;
             }
 
             netBalances.put(user, netBalances.getOrDefault(user, 0) - share);
@@ -63,17 +61,13 @@ class Group {
     }
 
     public void simplifyDebts() {
-        // IMPORTANT: make a copy of netBalances so original remains unchanged
         Map<User, Integer> tempBalances = new HashMap<>(netBalances);
-
         PriorityQueue<Map.Entry<User, Integer>> positive = new PriorityQueue<>((a, b) -> b.getValue() - a.getValue());
         PriorityQueue<Map.Entry<User, Integer>> negative = new PriorityQueue<>(Map.Entry.comparingByValue());
 
         for (Map.Entry<User, Integer> entry : tempBalances.entrySet()) {
-            if (entry.getValue() > 0)
-                positive.offer(entry);
-            else if (entry.getValue() < 0)
-                negative.offer(entry);
+            if (entry.getValue() > 0) positive.offer(entry);
+            else if (entry.getValue() < 0) negative.offer(entry);
         }
 
         while (!positive.isEmpty() && !negative.isEmpty()) {
@@ -84,18 +78,14 @@ class Group {
             User creditorUser = creditor.getKey();
             User debtorUser = debtor.getKey();
 
-            // Update debt mapping
-
             debtMap.get(debtorUser).put(creditorUser, settledAmount);
-            logs.add(debtorUser + " will pay " + settledAmount + " to " + creditorUser);
+            logs.add(debtorUser + " will pay Rs. " + settledAmount + " to " + creditorUser);
 
             int creditorNewBalance = creditor.getValue() - settledAmount;
             int debtorNewBalance = debtor.getValue() + settledAmount;
 
-            if (creditorNewBalance > 0)
-                positive.offer(new AbstractMap.SimpleEntry<>(creditorUser, creditorNewBalance));
-            if (debtorNewBalance < 0)
-                negative.offer(new AbstractMap.SimpleEntry<>(debtorUser, debtorNewBalance));
+            if (creditorNewBalance > 0) positive.offer(new AbstractMap.SimpleEntry<>(creditorUser, creditorNewBalance));
+            if (debtorNewBalance < 0) negative.offer(new AbstractMap.SimpleEntry<>(debtorUser, debtorNewBalance));
         }
     }
 
@@ -108,38 +98,38 @@ class Group {
 
         if (owed >= amount) {
             fromDebts.put(to, owed - amount);
-            if (fromDebts.get(to) == 0) {
-                fromDebts.remove(to);
-            }
+            if (fromDebts.get(to) == 0) fromDebts.remove(to);
         } else {
             fromDebts.remove(to);
             Map<User, Integer> toDebts = debtMap.getOrDefault(to, new HashMap<>());
             toDebts.put(from, toDebts.getOrDefault(from, 0) + (amount - owed));
         }
 
-        logs.add(from + " paid " + amount + " to " + to);
+        logs.add(from + " paid Rs. " + amount + " to " + to);
     }
 
     public void showBalances(User user) {
-        System.out.println("Balances for user: " + user + " -> Net balance: " + netBalances.getOrDefault(user, 0));
+        System.out.println(user + " Net balance: Rs. " + netBalances.getOrDefault(user, 0));
     }
 
     public void showAllDebts() {
-        System.out.println("Detailed Debts in Group " + groupName + ":");
+        System.out.println("\n================ Detailed Debts ================");
         for (User from : debtMap.keySet()) {
             for (Map.Entry<User, Integer> entry : debtMap.get(from).entrySet()) {
                 if (entry.getValue() > 0) {
-                    System.out.println("  " + from + " will pay Rs. " + entry.getValue() + " to " + entry.getKey());
+                    System.out.println(from + " will pay Rs. " + entry.getValue() + " to " + entry.getKey());
                 }
             }
         }
+        System.out.println("=================================================\n");
     }
 
     public void showLogs() {
-        System.out.println("Transaction Log for Group " + groupName + ":");
+        System.out.println("\n================ Transaction Logs ================");
         for (String log : logs) {
-            System.out.println("  - " + log);
+            System.out.println("- " + log);
         }
+        System.out.println("===================================================\n");
     }
 }
 
@@ -150,9 +140,7 @@ public class ExpenseSplitterApp {
 
     public static void main(String[] args) {
         while (true) {
-            System.out.println(
-                    "\n1. Create User\n2. Create Group\n3. Add User to Group\n4. Add Expense\n5. Make Payment\n6. View Balances\n7. View Logs\n8. View Debts\n9. Run Test Case\n10. Exit");
-            System.out.print("Choose option: ");
+            showMenu();
             int choice = sc.nextInt();
             sc.nextLine();
 
@@ -166,38 +154,66 @@ public class ExpenseSplitterApp {
                 case 7 -> viewLogs();
                 case 8 -> viewDebts();
                 case 9 -> runTestCase();
-                case 10 -> System.exit(0);
+                case 10 -> exitApp();
+                default -> System.out.println("\u001B[31mInvalid option!\u001B[0m");
             }
+            promptEnterKey();
         }
+    }
+
+    static void showMenu() {
+        System.out.println("\n================ Expense Splitter ==================");
+        System.out.println("1. Create User");
+        System.out.println("2. Create Group");
+        System.out.println("3. Add User to Group");
+        System.out.println("4. Add Expense");
+        System.out.println("5. Make Payment");
+        System.out.println("6. View Balances");
+        System.out.println("7. View Logs");
+        System.out.println("8. View Debts");
+        System.out.println("9. Run Sample Test Case");
+        System.out.println("10. Exit");
+        System.out.println("====================================================\n");
+        System.out.print("Enter your choice: ");
+        
     }
 
     static void createUser() {
         System.out.print("Enter username: ");
         String name = sc.nextLine();
         users.put(name, new User(name));
+        System.out.println("\u001B[32mUser created successfully!\u001B[0m");
     }
 
     static void createGroup() {
         System.out.print("Enter group name: ");
         String name = sc.nextLine();
         groups.put(name, new Group(name));
+        System.out.println("\u001B[32mGroup created successfully!\u001B[0m");
     }
 
     static void addUsersToGroup() {
         System.out.print("Enter group name: ");
         String gName = sc.nextLine();
-        boolean flag = true;
-        while (flag) {
+        if (!groups.containsKey(gName)) {
+            System.out.println("\u001B[31mGroup not found!\u001B[0m");
+            return;
+        }
+        Group group = groups.get(gName);
+
+        boolean adding = true;
+        while (adding) {
             System.out.print("Enter user name: ");
             String uName = sc.nextLine();
-            if (groups.containsKey(gName) && users.containsKey(uName)) {
-                groups.get(gName).addUser(users.get(uName));
+            if (users.containsKey(uName)) {
+                group.addUser(users.get(uName));
+                System.out.println("User added to group.");
+            } else {
+                System.out.println("\u001B[31mUser not found!\u001B[0m");
             }
-            System.out.println("To enter new user enter 1 else enter 0");
-            String flagVal = sc.nextLine();
-            if (flagVal.equals("0")) {
-                flag = false;
-            }
+            System.out.print("Add another user? (y/n): ");
+            String ans = sc.nextLine();
+            adding = ans.equalsIgnoreCase("y");
         }
     }
 
@@ -218,7 +234,8 @@ public class ExpenseSplitterApp {
         }
         sc.nextLine();
         group.addExpense(paidBy, amount, split);
-        group.simplifyDebts(); // Now it won't disturb real netBalances
+        group.simplifyDebts();
+        System.out.println("\u001B[32mExpense added and debts simplified.\u001B[0m");
     }
 
     static void makePayment() {
@@ -232,6 +249,7 @@ public class ExpenseSplitterApp {
         int amount = sc.nextInt();
         sc.nextLine();
         group.makePayment(from, to, amount);
+        System.out.println("\u001B[32mPayment done successfully!\u001B[0m");
     }
 
     static void viewBalances() {
@@ -255,50 +273,41 @@ public class ExpenseSplitterApp {
     }
 
     static void runTestCase() {
-        System.out.println("Running test case...");
-        User a = new User("0");
-        User b = new User("1");
-        User c = new User("2");
-        User d = new User("3");
-        User e = new User("4");
-        users.put("0", a);
-        users.put("1", b);
-        users.put("2", c);
-        users.put("3", d);
-        users.put("4", e);
+        System.out.println("\u001B[34mRunning Sample Test Case...\u001B[0m");
+        User a = new User("A");
+        User b = new User("B");
+        User c = new User("C");
+        users.put("A", a);
+        users.put("B", b);
+        users.put("C", c);
 
         Group trip = new Group("Trip");
         trip.addUser(a);
         trip.addUser(b);
         trip.addUser(c);
-        trip.addUser(d);
-        trip.addUser(e);
         groups.put("Trip", trip);
 
         Map<User, Integer> split1 = new HashMap<>();
-        split1.put(a, 200);
-        split1.put(b, 0);
-        split1.put(c, 400);
-        trip.addExpense(a, 600, split1);
-
-        Map<User, Integer> split2 = new HashMap<>();
-        split2.put(a, 100);
-        split2.put(b, 100);
-        split2.put(c, 100);
-        trip.addExpense(b, 300, split2);
-
-        Map<User, Integer> split3 = new HashMap<>();
-        split3.put(a, 100);
-        split3.put(b, 0);
-        split3.put(c, 0);
-        trip.addExpense(c, 100, split3);
+        split1.put(a, 100);
+        split1.put(b, 100);
+        split1.put(c, 100);
+        trip.addExpense(a, 300, split1);
 
         trip.simplifyDebts();
-
         trip.showBalances(a);
         trip.showBalances(b);
         trip.showBalances(c);
         trip.showLogs();
         trip.showAllDebts();
+    }
+
+    static void exitApp() {
+        System.out.println("\u001B[32mThank you for using Expense Splitter!\u001B[0m");
+        System.exit(0);
+    }
+
+    static void promptEnterKey() {
+        System.out.println("\nPress ENTER to continue...");
+        sc.nextLine();
     }
 }
